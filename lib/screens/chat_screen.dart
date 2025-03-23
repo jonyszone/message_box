@@ -65,7 +65,20 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
+            child: chatProvider.messages.isEmpty
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Icon(Icons.chat_bubble_outline, size: 60, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'No messages yet.',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ) : ListView.builder(
               controller: _scrollController,
               itemCount: messages.length,
               itemBuilder: (context, index) {
