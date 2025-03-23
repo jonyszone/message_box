@@ -11,6 +11,25 @@ class ChatProvider with ChangeNotifier {
 
   List<Message> get messages => _messages;
 
+  final FocusNode _messageFocusNode = FocusNode();
+  FocusNode get messageFocusNode => _messageFocusNode;
+
+  final List<void Function()> _messageListeners = [];
+
+  void addMessageListener(void Function() listener) {
+    _messageListeners.add(listener);
+  }
+
+  void removeMessageListener(void Function() listener) {
+    _messageListeners.remove(listener);
+  }
+
+  void _notifyMessageListeners() {
+    for (var listener in _messageListeners) {
+      listener();
+    }
+  }
+
   ChatProvider() {
     _loadMessages();
   }
@@ -46,9 +65,16 @@ class ChatProvider with ChangeNotifier {
     _webSocketService.sendMessage(message);
   }
 
+  Future<void> clearChatMessages() async {
+    await _messageBox.clear();
+    messages.clear();
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _webSocketService.dispose();
+    _messageFocusNode.dispose();
     super.dispose();
   }
 }

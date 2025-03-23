@@ -13,11 +13,31 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ChatScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _scrollToBottom();
+  }
 
   @override
   void initState() {
     super.initState();
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    chatProvider.addMessageListener(_scrollToBottom);
     chatProvider.connectWebSocket('ws://echo.websocket.org');
   }
 
@@ -34,11 +54,19 @@ class _ChatScreenState extends State<ChatScreen> {
     final messages = chatProvider.messages;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Chat')),
+      appBar: AppBar(title: Text('Chat'), actions: [
+        IconButton(
+          icon: const Icon(Icons.delete_sweep_sharp, color: Colors.red),
+          onPressed: () async {
+            await chatProvider.clearChatMessages();
+          },
+        ),
+      ],),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               itemCount: messages.length,
               itemBuilder: (context, index) {
                 final message = messages[index];
@@ -58,6 +86,13 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
+                    focusNode: chatProvider.messageFocusNode,
+                    onSubmitted: (value) {
+                      if (_controller.text.isNotEmpty) {
+                        chatProvider.sendMessage('Me', _controller.text);
+                        _controller.clear();
+                      }
+                    },
                     decoration: InputDecoration(hintText: 'Type a message'),
                   ),
                 ),
